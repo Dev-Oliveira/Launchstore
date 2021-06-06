@@ -922,13 +922,333 @@ mas ainda não da pra atualizar)
 				const file = result.rows[0]
 				
 				fs.unlinkSync(file.path)
+
+				
+				return db.query(`
+					DELETE FROM files WHERE id = $1
+				`, [id])
 			}cath(err) {
 				console.error(err)
 			}
 
+		}
+
+	-No navegador - pagina edit,
+		-Tirar fotos adicionadas e atualizar... verificar se sumiu no banco de dados
+		(ainda não atualiza no edit)
+
+
+
+
+
+
+------------Atualizando imagens no banco---------------------
+
+
+-Abra o arquivo "ProductController.js"
+
+	-Dentro da função "put()"
+
+		-Acima da linha "if(req.body.removed_files)", escreva
+
+			if (req.files.lenght != 0) {
+				const newFilesPromise = req.files.map(file =>
+				File.create({...file, product_id: req.body.id}))
+
+				await Promise.all(newFilesPromise)
+			}
+
+-Testar editar, colocar novas fotos e atualizar
+
+
+
+
+
+
+
+
+
+------------------Debugando com Vscode-------------------------------
+
+
+-Abra o arquivo package.json e reescreva o script, Para:
+
+	"scripts": { 
+	"debug": "nodemon --inspect=0.0.0.0:9229 src/server.js",
+    "start": "npm-run-all -p nodemon browsersync ",
+    "nodemon": "nodemon src/server.js",
+    "browsersync": "browser-sync start --proxy http://localhost:5000 --files 'public, src/app/views'"
+  },
+
+
+
+-Abra o DeBug clique em config
+
+	-Com o arquivo launch.json aberto, escreva:
+
+		{
+			// Use IntelliSense to learn about possible attributes.
+			// Hover to view descriptions of existing attributes.
+			// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+			"version": "0.2.0",
+			"configurations": [
+				{
+					"type": "node",
+					"request": "attach",
+					"name": "attach to Process",
+					"address": "localhost",
+					"port": 9229 
+				}
+			]
+		}
+	-Ele explica como usar o debug (assista ao video caso precise)
+
+
+
+
+
+
+DESCONSIDERAAAAAAAAA ESSA PARTEEEEEEEE DESCONSIDERAAAAAAAAA ESSA PARTEEEEEEEE
+-No arquivo File.js
+
+	-substitua a linha "fs.unlinkSync(file.path)", por:
+
+		fs.unlink(file.path, (err)=> {
+			if (err) twrow err
 			return db.query(`
 				DELETE FROM files WHERE id = $1
 			`, [id])
+		})
+
+	-delete a linha abaixo:
+
+			return db.query(`
+				DELETE FROM files WHERE id = $1
+			`, [id])
+DESCONSIDERAAAAAAAAA ESSA PARTEEEEEEEE DESCONSIDERAAAAAAAAA ESSA PARTEEEEEEEE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+__________________________PAGINA DE COMPRAS_____________________________________________
+
+
+
+-----------HTML DA PAGINA DE COMPRAS-----------------
+
+-No arquivo "routes.js"
+
+	-Abaixo da rota "get.create", escreva:
+
+		routes.get('/products/:id', ProductController.show) 
+
+-Abra o arquivo "ProductController.js"
+
+	-Abaixo da função "post()", escreva:
+
+		show(req, res) {
+			return res.render("products/show")
+		}
+
+-Na pasta "products" crie e arquivo "show.njk"
+
+	-Dentro do arquivo "show.njk", escreva:
+
+		{% extends "layout.njk "%}
+		{% block content %}
+			<section class="product-single container">
+				<div class="gallery">
+					<img src="http://placehold.it/500x500?text=PRODUTO SEM FOTO"/>
+				</div>
+				<div class="info">
+					<h1>Computador</h1>
+
+					<div class="published">
+						Publicado em 18/12 às 21h
+					</div>
+				</div>
+
+				<div class="description">
+					sadsdjsanjdsadsa
+				</div>
+
+				<div class="price-buy">
+					<div class="price">
+						R$ 99,00
+					</div>
+					<div class="buy">
+						<button class="button">Comprar</button>
+					</div>
+				</div>
+			</section>
+		{% endblock content %}
+	
+	-renderize a pagina /product/id
+
+
+
+
+
+
+------------Iniciando CSS da página de Compras-------------------
+
+-Abra o arquivo "Styles.css", no fim da pagina escreva:
+
+	/* PRODUCT VIEW */
+
+	.product-single {
+		background-color: white;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		grid-gap: 24px;
+
+		padding: 32px 24px;
+		margin:32px auto;
+
+		box-shadow: 2px 2px 2px -4px rgba(63,63,63,.9);
+
+		border: 1px solid #efefef
+		border-radius: 4px;
+	}
+
+	.product-sigle .gallery {
+		width: 100%;
+	}
+	.product-sigle .gallery img {
+		width: 100%;
+	}
+
+
+
+
+
+--------------Aplicando CSS grid em linha------------------
+
+-Ainda no arquivo "styles.css", no fim do conteudo, escreva:
+
+	/* product single info */
+
+	.product-single .info {
+		display:grid;
+		grid-template-rows: auto 40px 2fr 1fr;
+	}
+
+
+
+
+
+
+
+--------------Estilos de titulo e data de publicação------------------
+
+-Ainda no arquivo "styles.css", no fim do conteudo, escreva:
+
+	.product-single .info h1 {
+		font-size: 32px;
+		line-height: 32px;
+		color: #333;
+		text-tranform: uppercase;
+	}
+
+	.product-single .info .published {
+		color:#888;
+		font-size:12px;
+		line-height: 22px;
+		letter-spacing: 0.4px;
+	}
+
+
+
+
+
+
+
+
+--------------Ajustando preço e botão de compra------------------
+
+-Ainda no arquivo "styles.css", no fim do conteudo, escreva:
+
+	/* price-buy */
+	.product-single .price-buy{
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+
+		padding-top: 8px;
+		border-top: 1px solid #eee ;
+	}
+
+	.product-single .price-buy .price{
+		font-size: 24px;
+		color: #333;
+		font-weight: bold;
+
+		display: flex;
+		align-items: center;
+	}
+
+	.product-single .price-buy .price .old{
+		
+	}
+
+-No arquivo show.njk da pasta products,
+
+	-substitua a div price por:
+
+		<div class="price">
+			R$ 99,00
+			<span class="old">R$ 89,00</span>
+		</div>
+
+-No arquivo "styles.css", no fim do conteudo, escreva:
+
+	.product-single .price-buy .price .old{
+		text-decoration: line-throught;
+		color: #999;
+		font-size: 14px;
+		font-weight: normal;
+		margin-left: 8px;	
+	}
+
+	.product-single .price-buy .buy button {
+		background-color: var(--secondary-color);
+
+		font-size: 14px;
+		letter-spacing: 0.4px;
+	}
+
+
+
+
+
+
+
+
+--------------Posicionando Footer------------------
+
+
+-No arquivo "styles.css", na tag"body{}", acrescente:
+
+	display: flex;
+	flex-direction: column;
+
+	-Abaixo da tag "body{}", escreva:
+
+		footer{
+			margin-top: auto
 		}
 
 
@@ -938,18 +1258,7 @@ mas ainda não da pra atualizar)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+--------------Dados para apresentação do produto------------------
 
 
 
