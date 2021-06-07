@@ -1258,7 +1258,158 @@ __________________________PAGINA DE COMPRAS_____________________________________
 
 
 
---------------Dados para apresentação do produto------------------
+--------------Dados para apresentação de produtos------------------
+
+
+-Abra o arquivo "ProductController.js"
+
+	-substitua a função "show()" Por:
+
+		async show(req, res){
+
+			let results = await Product.find(req.params.id)
+			const product = results.rows[0]
+
+			if(!product) return res.send("Product Not Found")
+
+
+			const { day, hour, minutes, month} = date(product.updated_at)
+			product.published = {
+				day: `${day}/${month}`,
+				hour: `${hour}h${minutes}`,
+			}
+			product.oldPrice = formatPrice(product.old_price)
+			return res render ("products/show", { product })
+		}
+
+	-mude a "const { formatPrice }", para:
+
+		const { formatPrice, date } = require('../../lib/utils')
+
+-Abra o arquivo ultils.js,
+
+	-substitua a função "date()", por:
+
+		date(timestamp){
+			const date = new Date(timestamp)
+
+			const year = date.getFullYear()
+			const month = `0${date.getMonth() + 1}`.slice(-2)
+			const day = `0${date.getDate()}`.slice(-2)
+			const hour = date.getHours()
+			const minutes = date.getMinutes()
+
+			//return yyyy-mm-dd
+			console.log(`${year}-${month}-${day}`)
+			
+			return {
+				day,
+				month,
+				year,
+				hour,
+				minutes,
+				iso: `${year}-${month}-${day}`,
+				birthDay:`${day}/${month}`,
+				format: `${day}/${month}/${year}`
+			}
+    	},
+
+
+-Abra o arquivo "show.njk" da pasta products
+
+	-mude a div.info, Para:
+
+		<div class="info">
+			<h1>{{product.name}}</h1>
+			
+			<div class="published">
+				Publicado em {{product.day}} às {{product.published.hour}}
+			</div>
+
+			<div class="description">
+				{{product.description}}
+			</div>	
+
+			<div class="price-buy">
+				<div class="price">
+					{{product.price}}
+					
+					{% if product.price !==product.oldPrice %}
+						<span class="old">{{product.oldPrice}}</span>
+					{%endif%}
+				</div>
+
+				<div class="buy">
+					{% if product.status == 0 %}
+						<p class="unavailable"> Indisponível </p>
+					{% elseif product.quantity == 0 %}
+						<p class="unavailable"> Fora de Estoque </p>
+					{% else %}
+						<button class="button">Comprar</button>
+					{%endif%}
+				</div>
+			</div>
+		</div>
+
+
+-Abra o arquivo "ProductController.js"
+
+	-Na função "put()", mude a linha:
+
+		return res.redirect(`/products/${req.body.id}/edit`)
+
+			para:
+
+		return res.redirect(`/products/${req.body.id}`)
+
+	
+
+
+
+
+
+----------------Procedures e Triggers no SQL--------------------------
+
+-Logica de função no SQL:
+
+	CREATE FUNCTION funcName(arg text, arg2 int)
+	RETURNS text AS $$
+	BEGIN
+		RETURN 'meu texto' || arg
+	END;
+	$$
+
+	-legenda: "||" é contatenção
+
+-No postbird, na tabela products
+
+	-Rode a query:
+
+		CREATE FUNCTION trigger_set_timestamp()
+		RETURNS TRIGGER AS $$
+		BEGIN
+			NEW.updated_at = NOW();
+			RETURN NEW;
+		END;
+		$$	
+
+	-Rode a query:
+
+		CREATE FUNCTION funcName(arg text, arg2 int)
+		RETURNS text AS $$
+		BEGIN
+			RETURN 'meu texto' || arg
+		END;
+		$$
+
+		CREATE TRIGGER trigger_set_timestamp
+		BEFORE UPDATE ON products
+		FOR EACH ROW
+		EXECUTE PROCEDURE trigger_set_timestamp();
+
+-Atualize algum produto
+
+	-Verifique se a data da publicação foi atualizada
 
 
 
@@ -1266,6 +1417,289 @@ __________________________PAGINA DE COMPRAS_____________________________________
 
 
 
+
+-------------------Estruturando galeria de imagens do pruduto---------------------------------
+
+-Abra o arquivo "ProductController.js"
+
+	-Na função "show()",
+
+		-Acima da linha "return res.render", escreva:
+
+			results = await Product.files(product.id)
+			const files = results.rows.map(file => ({
+				...file,
+				src:`${req.protocol}://${req.headers.host}${file.path.replace("public", "")}`
+			}))
+
+		-Mude a linha "return res.render" para:
+
+			return res.render("products/show", { product, files })
+
+-Abra o arquivo "show.njk" na pasta products
+
+	-substitua a div.gallery por:
+
+		<div class="gallery">
+			<div class="highlight">
+				{% if not files[0] %}
+				<img src="http://placehold.it/500x500?text=PRODUTO SEM FOTO"/>
+				{% else %}
+					<img src="{{files[0].src}}" alt="{{files[0].name}}">
+				{%endif%}
+			</div>
+			<div class="gallery-preview">
+				{%for image in files %}
+					<img 
+					src="{{image.src}}"
+					alt="{{image.name}}"
+					{% if loop.index0 == 0%}
+					class="active"
+					{%endif%}
+					>
+				{% endfor%}
+			</div>
+		</div>		
+
+-Abra o arquivo "styles.css",
+
+	-Acima da tag ".product-single .gallery", escreva:
+
+		/* product single gallery */
+
+	-Substitua da tag".product-single .gallery img", por:
+
+		.product-single .highlight > img {
+			width: 100%;
+			height: 280px;
+
+			object-fit: none;
+			object-position: 50% 50%;
+			border: 1px solid #efefef
+
+			cursor: zoom-in;
+		}
+
+		.product-single .gallery-preview{
+			display:grid;
+			grid-template-columns: repeat(3, 1fr);
+			grid-gap: 2px;
+		}
+		.product-single .gallery-preview img {
+			height:100px;
+			width: 100%;
+
+			object-fit: cover;
+
+			opacity: 0.6;
+
+			cursor: pointer;
+
+			transition: 200ms;
+		}
+
+		.product-single .gallery-preview img:hover,
+		.product-single .gallery-preview img.active{
+			opacity: 1;
+		}
+
+
+
+
+
+
+
+----------------Funcionalidades da galeria de imagens------------------------
+
+-Abra o arquivo "show.njk"
+
+	-Substitua a div.gallery-preview, por:
+
+		<div class="gallery-preview">
+			{%for image in files %}
+				<img 
+				src="{{image.src}}"
+				alt="{{image.name}}"
+				{% if loop.index0 == 0%}
+				class="active"
+				{%endif%}
+				onclick="ImageGallery.setImage(event)"
+				>
+			{% endfor%}
+		</div>		
+
+-Abra o arquivo "scrips.js",
+
+	-Abaixo da "const PhotosUpload", escreva
+
+		const ImageGallery = {
+			highlight: document.querySelector('.gallery .highlight' > img)
+			previews: document.querySelectorAll('.gallery-preview img'),
+			setImage(e) {
+				const { target } = e
+				
+				ImageGallery.previews.forEach(preview => preview.classList.remove('active'))
+				target.classList.add('active')
+
+				ImageGallery.highlight.src = target.src
+			}
+		} 
+
+
+
+
+
+
+
+
+----------------MONTANDO LIGHTBOX---------------------
+
+-Abra o arquivo "Show.njk" da pasta products
+
+	-substitua a div.highlight por:
+
+		<div class="highlight">
+			{% if not files[0] %}
+			<img src="http://placehold.it/500x500?text=PRODUTO SEM FOTO"/>
+			{% else %}
+				<img src="{{files[0].src}}" alt="{{files[0].name}}">
+			{%endif%}
+
+			<div class="lightbox-target">
+				<img src="{{files[0].src}}" alt"{{files[0].name}}">
+				<a href="#" class="lightbox-close">
+					<i class="material-icons">close</i>
+				</a>
+			</div>
+		</div>
+
+-Abra o arquivo "styles.css" 
+
+	-Acima do comentario /* product single info */, escreva:
+
+		/* lightbox product gallery*/
+
+		.product-single .highlight .lightbox-target {
+			position: fixed;
+			width:100%;
+			height:100%;
+			background: rgba(0,0,0, .7); 
+
+			overflow: hidden;
+			z-index: 100;
+
+			top: 0,
+			left: 0;
+		}
+
+		.product-single .highlight .lightbox-target img{
+			margin: auto;
+
+			position: absolute;
+			top: 0;
+			left: 0;
+			bottom: 0;
+
+			background-color: white;
+			box-shadow: 0px 0px 8px rgba(0,0,0,.3);
+
+			width:90%;
+			height:90%;
+
+			object-fit: container
+		}
+
+		.product-single .highlight a.lightbox-close {
+			width:50px;
+			height:50px;
+
+			background: white;
+
+			position: absolute;
+			top: -80px;
+			right: 0;
+
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			transition: 400ms
+		}
+
+-Abra o navegador em products/id
+
+-No arquivo styles.css,
+
+	-Na tag ".product-single .highlight .lightbox-target{}"
+
+		-mude:
+
+			top: 0;
+
+				para
+			
+			top:-100%;
+
+		-E acrescente:
+
+			opacity: 0;
+
+			transition: opacity 400ms;		
+
+
+
+
+
+
+---------------------javascript do lightbox----------------------------
+
+-No arquivo "script.js",
+
+	-Abaixo do "const ImageGallery", escreva:
+
+		const Lightbox = {
+			target: document.querySelector('.lightbox-target'),
+			image: document.querySelector('.lightbox-taget img'),
+			closeButton: document.querySelector('.lightbox-target a.lightbox-close'),
+			open() {
+				Lightbox.target.style.opacity = 1
+				Lightbox.target.style.top = 0
+				Lightbox.target.style.bottom = 0
+				Lightbox.closeButton.style.top = 0
+			},
+			close() {
+				Lightbox.target.style.opacity = 0
+				Lightbox.target.style.top = "-100%"
+				Lightbox.target.style.bottom = "initial"
+				Lightbox.closeButton.style.top = "-80px"
+			}
+		}
+
+-No arquivo "show.njk" da pasta products,
+
+	-Mude a tag "a.light-close" para:
+
+		<a
+			href="#"
+			class="lightbox-close"
+			onclick="Lightbox.close()"
+			>
+			<i class="material-icons">close</i>
+		</a>
+	
+	-Mude a segunda tag"img" da "div.highlight", para:
+
+		<img
+			src="{{files[0].src}}"
+			alt="{{files[0].name}}"
+			onclick="Lightbox.open"
+		>
+
+-No arquivo "scripts.js" na "const ImageGallery",
+
+	-Abaixo da linha "ImageGallery.highlight.src", escreva:
+
+		Lightbox.image.src = target.src
 
 
 
