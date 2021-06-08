@@ -667,7 +667,7 @@ _______________________________________________________________________Salvando,
 				`
 				const values = [
 					filename,
-					path || 1
+					path || 1,
 					product_id
 				]
 				
@@ -928,7 +928,7 @@ mas ainda não da pra atualizar)
 				return db.query(`
 					DELETE FROM files WHERE id = $1
 				`, [id])
-			}cath(err) {
+			}catch(err) {
 				console.error(err)
 			}
 
@@ -961,7 +961,7 @@ mas ainda não da pra atualizar)
 
 -Testar editar, colocar novas fotos e atualizar
 
-
+PAREI AQUI.... TA DANDO ERRO
 
 
 
@@ -971,7 +971,7 @@ mas ainda não da pra atualizar)
 
 ------------------Debugando com Vscode-------------------------------
 
-
+DESCONSIDERAAAAAAAAA ESSA PARTEEEEEEEE DESCONSIDERAAAAAAAAA ESSA PARTEEEEEEEE
 -Abra o arquivo package.json e reescreva o script, Para:
 
 	"scripts": { 
@@ -1009,7 +1009,7 @@ mas ainda não da pra atualizar)
 
 
 
-DESCONSIDERAAAAAAAAA ESSA PARTEEEEEEEE DESCONSIDERAAAAAAAAA ESSA PARTEEEEEEEE
+
 -No arquivo File.js
 
 	-substitua a linha "fs.unlinkSync(file.path)", por:
