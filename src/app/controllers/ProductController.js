@@ -1,4 +1,4 @@
-const { formatPrice } = require('../../lib/utils')
+const { formatPrice, date } = require('../../lib/utils')
 
 const Category = require('../models/Category')
 const Product = require('../models/Product')
@@ -21,7 +21,7 @@ module.exports = {
 
         for(key of keys) {
             if (req.body[key] == ""){
-                return res.send('Please, fill all fields!'),console.log(req.files)
+                return res.send('Please, fill all fields!')
             }
         }
 
@@ -37,6 +37,30 @@ module.exports = {
     
 
         return res.redirect(`/products/${productId}/edit`)
+    },
+    async show(req, res){
+
+        let results = await Product.find(req.params.id)
+        const product = results.rows[0]
+
+        if(!product) return res.send("Product Not Found")
+
+
+        const { day, hour, minutes, month} = date(product.updated_at)
+        product.published = {
+            day: `${day}/${month}`,
+            hour: `${hour}h${minutes}`,
+        }
+        product.price = formatPrice(product.price)
+        product.oldPrice = formatPrice(product.old_price)
+        
+        results = await Product.files(product.id)
+			const files = results.rows.map(file => ({
+				...file,
+				src:`${req.protocol}://${req.headers.host}${file.path.replace("public", "")}`
+            }))
+        
+            return res.render("products/show", { product, files })
     },
     async edit(req, res) {
         let results = await Product.find(req.params.id)
@@ -65,10 +89,10 @@ module.exports = {
 
         for(key of keys) {
             if (req.body[key] == "" && key != "removed_files"){
-                return res.send('Please, fill all fields!'),console.log(req.body)
+                return res.send('Please, fill all fields!')
             }
         }	
-        console.log(req.body)
+        
         if(req.files.length != 0) {
             const newFilesPromise = req.files.map(file =>
             File.create({...file, product_id: req.body.id}))
@@ -96,7 +120,7 @@ module.exports = {
 
         await Product.update(req.body)
 
-        return res.redirect(`/products/${req.body.id}/edit`)
+        return res.redirect(`/products/${req.body.id}`)
     },
     async delete(req, res){
         await Product.delete(req.body.id)

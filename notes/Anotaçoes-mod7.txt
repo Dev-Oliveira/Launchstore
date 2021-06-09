@@ -961,7 +961,6 @@ mas ainda não da pra atualizar)
 
 -Testar editar, colocar novas fotos e atualizar
 
-PAREI AQUI.... TA DANDO ERRO
 
 
 
@@ -1121,7 +1120,7 @@ __________________________PAGINA DE COMPRAS_____________________________________
 
 		box-shadow: 2px 2px 2px -4px rgba(63,63,63,.9);
 
-		border: 1px solid #efefef
+		border: 1px solid #efefef;
 		border-radius: 4px;
 	}
 
@@ -1161,7 +1160,7 @@ __________________________PAGINA DE COMPRAS_____________________________________
 		font-size: 32px;
 		line-height: 32px;
 		color: #333;
-		text-tranform: uppercase;
+		text-transform: uppercase;
 	}
 
 	.product-single .info .published {
@@ -1201,9 +1200,6 @@ __________________________PAGINA DE COMPRAS_____________________________________
 		align-items: center;
 	}
 
-	.product-single .price-buy .price .old{
-		
-	}
 
 -No arquivo show.njk da pasta products,
 
@@ -1225,7 +1221,7 @@ __________________________PAGINA DE COMPRAS_____________________________________
 	}
 
 	.product-single .price-buy .buy button {
-		background-color: var(--secondary-color);
+		background-color: var(--secundary-color);
 
 		font-size: 14px;
 		letter-spacing: 0.4px;
@@ -1280,7 +1276,7 @@ __________________________PAGINA DE COMPRAS_____________________________________
 				hour: `${hour}h${minutes}`,
 			}
 			product.oldPrice = formatPrice(product.old_price)
-			return res render ("products/show", { product })
+			return res.render ("products/show", { product })
 		}
 
 	-mude a "const { formatPrice }", para:
@@ -1392,18 +1388,20 @@ __________________________PAGINA DE COMPRAS_____________________________________
 			NEW.updated_at = NOW();
 			RETURN NEW;
 		END;
-		$$	
+		$$	LANGUAGE plpgsql; 
 
 	-Rode a query:
 
-		CREATE FUNCTION funcName(arg text, arg2 int)
-		RETURNS text AS $$
+		CREATE FUNCTION trigger_set_timestamp()
+		RETURNS TRIGGER AS $$
 		BEGIN
-			RETURN 'meu texto' || arg
+			NEW.updated_at = NOW();
+			RETURN NEW;
 		END;
-		$$
+		$$	LANGUAGE plpgsql;
+		
 
-		CREATE TRIGGER trigger_set_timestamp
+		CREATE TRIGGER set_timestamp
 		BEFORE UPDATE ON products
 		FOR EACH ROW
 		EXECUTE PROCEDURE trigger_set_timestamp();
@@ -1534,7 +1532,7 @@ __________________________PAGINA DE COMPRAS_____________________________________
 	-Abaixo da "const PhotosUpload", escreva
 
 		const ImageGallery = {
-			highlight: document.querySelector('.gallery .highlight' > img)
+			highlight: document.querySelector('.gallery .highlight' > img),
 			previews: document.querySelectorAll('.gallery-preview img'),
 			setImage(e) {
 				const { target } = e
@@ -1567,7 +1565,7 @@ __________________________PAGINA DE COMPRAS_____________________________________
 			{%endif%}
 
 			<div class="lightbox-target">
-				<img src="{{files[0].src}}" alt"{{files[0].name}}">
+				<img src="{{files[0].src}}" alt="{{files[0].name}}">
 				<a href="#" class="lightbox-close">
 					<i class="material-icons">close</i>
 				</a>
@@ -1589,7 +1587,7 @@ __________________________PAGINA DE COMPRAS_____________________________________
 			overflow: hidden;
 			z-index: 100;
 
-			top: 0,
+			top: 0;
 			left: 0;
 		}
 
@@ -1607,7 +1605,7 @@ __________________________PAGINA DE COMPRAS_____________________________________
 			width:90%;
 			height:90%;
 
-			object-fit: container
+			object-fit: contain;
 		}
 
 		.product-single .highlight a.lightbox-close {
@@ -1693,7 +1691,7 @@ __________________________PAGINA DE COMPRAS_____________________________________
 		<img
 			src="{{files[0].src}}"
 			alt="{{files[0].name}}"
-			onclick="Lightbox.open"
+			onclick="Lightbox.open()"
 		>
 
 -No arquivo "scripts.js" na "const ImageGallery",
